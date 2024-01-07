@@ -1,3 +1,4 @@
+const category = require("../models/category");
 const Category = require("../models/category");
 const Product = require("../models/product")
 const asyncHandler = require("express-async-handler");
@@ -85,12 +86,40 @@ exports.category_create_post = [
 
 // Display category delete form on GET.
 exports.category_delete_get = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: category delete GET");
+  const [category, allProductsInCategory] = await Promise.all([
+    Category.findById(req.params.id).exec(),
+    Product.find({category:req.params.id}, "name description").exec()
+  ]);
+
+  if (category === null){
+    res.redirect("/catalog/category");
+  }
+
+  res.render("category_delete", {
+    title:"Delete Category",
+    category: category,
+    category_products: allProductsInCategory,
+  });
 });
 
 // Handle category delete on POST.
 exports.category_delete_post = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: category delete POST");
+  const [category, allProductsInCategory] = await Promise.all([
+    Category.findById(req.params.id).exec(),
+    Product.find({category:req.params.id}, "name description").exec()
+  ]);
+
+  if (allProductsInCategory.length > 0) {
+    res.render("category_delete", {
+      title:"Delete Category",
+      category: category,
+      category_products: allProductsInCategory,
+    });
+    return;
+  } else {
+    await Category.findByIdAndDelete(req.body.categoryid);
+    res.redirect("/catalog/category");
+  }
 });
 
 // Display category update form on GET.
