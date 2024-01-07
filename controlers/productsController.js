@@ -2,6 +2,9 @@ const Product = require("../models/product");
 const Category = require("../models/category")
 const asyncHandler = require("express-async-handler");
 
+const { body, validationResult } = require("express-validator");
+const product = require("../models/product");
+
 
 exports.index = asyncHandler(async (req, res, next) => {
     const [
@@ -32,6 +35,7 @@ exports.product_list = asyncHandler(async (req, res, next) => {
 
 // Display detail page for a specific product.
 exports.product_detail = asyncHandler(async (req, res, next) => {
+
   const [product] = await Promise.all([
     Product.findById(req.params.id).populate("category").exec(),
   ]);
@@ -51,14 +55,81 @@ exports.product_detail = asyncHandler(async (req, res, next) => {
 
 // Display product create form on GET.
 exports.product_create_get = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: product create GET");
+  const categories = await Category.find().exec()
+
+  res.render("product_form", {
+    title: "Create Product",
+    categories:categories,
+  });
 });
 
 // Handle product create on POST.
-exports.product_create_post = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: product create POST");
-});
+exports.product_create_post = [
+  (req, res, next) => {
+    if (!Array.isArray(req.body.category)) {
+      req.body.category =
+        typeof req.body.category === "undefined" ? [] : [req.body.category];
+    }
+    next();
+  },
 
+  // Validate and sanitize fields.
+  body("name", "Name must not be empty.")
+    .trim()
+    .isLength({ min: 3 })
+    .escape(),
+  body("description", "description must not be empty.")
+    .trim()
+    .isLength({ min: 3 })
+    .escape(),
+  body("price", "Price should be a not empty number")
+    .trim()
+    .toFloat()
+    .isFloat({min:0})
+    .escape(),
+  body("number_stock", "stock should be a positive integer").trim().isInt({min:0}).escape(),
+  body("category.*").escape(),
+  // Process request after validation and sanitization.
+
+  asyncHandler(async (req, res, next) => {
+    // Extract the validation errors from a request.
+    const errors = validationResult(req);
+    console.log(req.body.price);
+
+    // Create a Book object with escaped and trimmed data.
+    const product = new Product({
+      name: req.body.name,
+      description: req.body.description,
+      price: req.body.price,
+      number_stock: req.body.number_stock,
+      category: req.body.category,
+    });
+
+    if (!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/error messages.
+
+      // Get all authors and genres for form.
+      const categories = await Category.find().exec()
+
+      // Mark our selected genres as checked.
+      for (const category of categories) {
+        if (product.category.includes(category._id)) {
+          category.checked = "true";
+        }
+      }
+      res.render("product_form", {
+        title: "Create Product",
+        categories: categories,
+        product:product,
+        errors: errors.array(),
+      });
+    } else {
+      // Data from form is valid. Save book.
+      await product.save();
+      res.redirect(product.url);
+    }
+  }),
+];
 // Display product delete form on GET.
 exports.product_delete_get = asyncHandler(async (req, res, next) => {
   res.send("NOT IMPLEMENTED: product delete GET");

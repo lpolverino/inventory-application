@@ -1,0 +1,35 @@
+extends layout 
+
+
+block content
+  h1= title
+
+  form(method='POST')
+    div.form-group
+      label(for='name') Name:
+      input#name.form-control(type='text', placeholder='Name of the product' name='name' required value=(undefined===product ? '' : product.name) )
+    div.form-group
+      label(for='description') Description:
+      textarea#description.form-control(placeholder='Description' name='description' required value= (undefined===product ? '' : product.description))
+    div.form-group
+      label(for='price') Price:
+      input#price.form-control(type='text', placeholder='10.50' name='price' value=(undefined===product ? '' : product.price) required)
+    div.form-group
+      label(for='number_stock') Stock:
+      input#number_stock.form-control(type='number', placeholder='1' name='number_stock' value=(undefined===product ? '' : product.number_stock) required)
+    div.form-group
+      label Category:
+      div
+        for category in categories
+          div(style='display: inline; padding-right:10px;')
+            if category.checked
+              input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id, checked)
+            else
+              input.checkbox-input(type='checkbox', name='category', id=category._id, value=category._id)
+            label(for=category._id) &nbsp;#{category.name}
+    button.btn.btn-primary(type='submit') Submit
+
+  if errors
+    ul
+      for error in errors
+        li!= error.msg
