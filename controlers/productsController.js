@@ -11,6 +11,8 @@ exports.index = asyncHandler(async (req, res, next) => {
       Product.countDocuments({}).exec(),
       Category.countDocuments({}).exec()
     ]);
+
+    console.log(numCategories);
   
     res.render("index", {
       title: "Computer Store",
@@ -21,12 +23,30 @@ exports.index = asyncHandler(async (req, res, next) => {
   
 // Display list of all products.
 exports.product_list = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: product list");
+  const allProducts = await Product.find().sort({ name: 1 }).exec();
+  res.render("product_list", {
+    title: "Product List",
+    products_list: allProducts,
+  });
 });
 
 // Display detail page for a specific product.
 exports.product_detail = asyncHandler(async (req, res, next) => {
-  res.send(`NOT IMPLEMENTED: product detail: ${req.params.id}`);
+  const [product] = await Promise.all([
+    Product.findById(req.params.id).populate("category").exec(),
+  ]);
+
+  if (product === null) {
+    // No results.
+    const err = new Error("Book not found");
+    err.status = 404;
+    return next(err);
+  }
+
+  res.render("product_detail", {
+    title: product.name,
+    product: product
+  });
 });
 
 // Display product create form on GET.

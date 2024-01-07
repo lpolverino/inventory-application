@@ -32,7 +32,7 @@ router.post("/product/:id/update", product_controller.product_update_post);
 router.get("/product/:id", product_controller.product_detail);
 
 // GET request for list of all product items.
-router.get("/products", product_controller.product_list);
+router.get("/product", product_controller.product_list);
 
 /// category ROUTES ///
 
@@ -58,7 +58,7 @@ router.post("/category/:id/update", category_controller.category_update_post);
 router.get("/category/:id", category_controller.category_detail);
 
 // GET request for list of all category.
-router.get("/categorys", category_controller.category_list);
+router.get("/category", category_controller.category_list);
 
 
 module.exports = router;
