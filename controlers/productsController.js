@@ -160,10 +160,92 @@ exports.product_delete_post = asyncHandler(async (req, res, next) => {
 
 // Display product update form on GET.
 exports.product_update_get = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: product update GET");
+  const [product, categories] = await Promise.all([
+    Product.findById(req.params.id).exec(),
+    Category.find().sort({ name: 1 }).exec()
+  ]);
+
+  if (product === null) {
+    // No results.
+    const err = new Error("Product not found");
+    err.status = 404;
+    return next(err);
+  }
+
+  
+  categories.forEach((cat) => {
+    if (product.category.includes(cat._id)) cat.checked = "true";
+  });
+ 
+
+  res.render("product_form", { title: "Update Product", product:product, categories: categories });
 });
 
 // Handle product update on POST.
-exports.product_update_post = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: product update POST");
-});
+exports.product_update_post = [
+  (req, res, next) => {
+    if (!Array.isArray(req.body.category)) {
+      req.body.category =
+        typeof req.body.category === "undefined" ? [] : [req.body.category];
+    }
+    next();
+  },
+
+  // Validate and sanitize fields.
+  body("name", "Name must not be empty.")
+    .trim()
+    .isLength({ min: 3 })
+    .escape(),
+  body("description", "description must not be empty.")
+    .trim()
+    .isLength({ min: 3 })
+    .escape(),
+  body("price", "Price should be a not empty number")
+    .trim()
+    .toFloat()
+    .isFloat({min:0})
+    .escape(),
+  body("number_stock", "stock should be a positive integer").trim().isInt({min:0}).escape(),
+  body("category.*").escape(),
+  // Process request after validation and sanitization.
+
+  asyncHandler(async (req, res, next) => {
+    // Extract the validation errors from a request.
+    const errors = validationResult(req);
+
+    // Create a Book object with escaped and trimmed data.
+    const product = new Product({
+      name: req.body.name,
+      description: req.body.description,
+      price: req.body.price,
+      number_stock: req.body.number_stock,
+      category: req.body.category,
+      _id: req.params.id, // This is required, or a new ID will be assigned!
+    });
+
+    if (!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/error messages.
+
+      // Get all authors and genres for form.
+      const categories = await Category.find().exec()
+
+      // Mark our selected genres as checked.
+      for (const category of categories) {
+        if (product.category.includes(category._id)) {
+          category.checked = "true";
+        }
+      }
+      res.render("product_form", {
+        title: "Create Product",
+        categories: categories,
+        product:product,
+        errors: errors.array(),
+      });
+      return;
+    } else {
+      // Data from form is valid. Save book.
+      const updateProduct = await Product.findByIdAndUpdate(req.params.id, product, {});
+      res.redirect(updateProduct.url);
+    }
+  }),
+];
