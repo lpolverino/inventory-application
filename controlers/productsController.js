@@ -132,13 +132,31 @@ exports.product_create_post = [
 ];
 // Display product delete form on GET.
 exports.product_delete_get = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: product delete GET");
+  const product = await Product.findById(req.params.id).exec()
+  if (product === null){
+    res.redirect("/catalog/product")
+  }
+  else{
+    res.render("product_delete", {
+      title:"Delete Product",
+      product: product,
+    });
+  }
+
 });
 
 // Handle product delete on POST.
 exports.product_delete_post = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: product delete POST");
+  const product = await Product.findById(req.params.id).exec()
+  if (product === null){
+    res.redirect("/catalog/product")
+  }
+  else{
+    await Product.findByIdAndDelete(req.body.productid);
+    res.redirect("/catalog/product")
+  }
 });
+
 
 // Display product update form on GET.
 exports.product_update_get = asyncHandler(async (req, res, next) => {
